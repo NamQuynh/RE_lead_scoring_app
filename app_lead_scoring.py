@@ -265,6 +265,19 @@ else:
         - **Cột được phép sửa:** Chỉ cột **Trạng thái duyệt** (Status) để nhân sự Kế toán/Sales phê duyệt.
     """)
     
+    # Tính năng Duyệt Nhanh (Quick Approve Actions) để tối ưu thao tác cho người dùng
+    col_quick1, col_quick2, col_quick3 = st.columns([1, 1, 2])
+    with col_quick1:
+        if st.button("⚡ Duyệt nhanh toàn bộ HOT & WARM"):
+            st.session_state.scored_df.loc[st.session_state.scored_df["Category"].isin(["HOT", "WARM"]), "Status"] = "Đã duyệt"
+            st.toast("Đã chuyển trạng thái toàn bộ khách hàng HOT & WARM sang 'Đã duyệt'!", icon="⚡")
+            st.rerun()
+    with col_quick2:
+        if st.button("🗑️ Loại bỏ toàn bộ JUNK"):
+            st.session_state.scored_df.loc[st.session_state.scored_df["Category"] == "JUNK", "Status"] = "Loại bỏ"
+            st.toast("Đã loại bỏ toàn bộ khách hàng JUNK!", icon="🗑️")
+            st.rerun()
+            
     # Cấu hình danh sách cột khóa
     disabled_cols = [col for col in df_scored.columns if col != "Status"]
     
@@ -291,6 +304,9 @@ else:
         use_container_width=True,
         hide_index=True
     )
+    
+    # Đồng bộ trạng thái chỉnh sửa thủ công vào session_state để lưu trữ
+    st.session_state.scored_df = edited_df
     
     st.divider()
 
