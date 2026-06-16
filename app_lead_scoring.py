@@ -28,13 +28,14 @@ render_header()
 @st.cache_data(ttl=60)
 def fetch_and_score_data():
     df_raw = load_data_from_private_gsheet()
+    using_fallback = False
     if df_raw is None:
-        st.warning("⚠️ Không thể kết nối GSheets. Tự động chuyển sang dữ liệu dự phòng.")
         df_raw = load_data_fallback()
+        using_fallback = True
         
     if df_raw is not None and not df_raw.empty:
-        return process_leads_dataframe(df_raw)
-    return None
+        return process_leads_dataframe(df_raw), using_fallback
+    return None, False
 
 refresh_clicked = st.sidebar.button("🔄 Tải lại Dữ Liệu & AI")
 
@@ -43,15 +44,19 @@ if "scored_df" not in st.session_state or refresh_clicked:
         if refresh_clicked:
             fetch_and_score_data.clear()
             
-        df_result = fetch_and_score_data()
+        df_result, using_fallback = fetch_and_score_data()
         if df_result is not None:
             st.session_state.scored_df = df_result
+            st.session_state.using_fallback = using_fallback
             st.toast("AI đã nạp và phân tích dữ liệu thành công!", icon="✅")
         else:
             st.error("❌ Không có dữ liệu để xử lý.")
 
 # 3. Hiển thị Dashboard & Chức năng
 if "scored_df" in st.session_state and st.session_state.scored_df is not None:
+    if st.session_state.get("using_fallback", False):
+        st.info("⚠️ Hệ thống đang sử dụng dữ liệu dự phòng (Local Excel) do chưa cấu hình xong kết nối GSheets.")
+        
     df_scored = st.session_state.scored_df
     
     render_kpis(df_scored)

@@ -22,8 +22,8 @@ def load_data_from_private_gsheet():
             
         return df
     except Exception as e:
-        # Ẩn lỗi chi tiết (tránh lộ thông tin nhạy cảm)
-        st.error("❌ Kết nối Google Sheets thất bại. Vui lòng kiểm tra file secrets.toml hoặc quyền truy cập của Service Account.")
+        # Silently return None on failure so caller can handle fallback
+        # without causing transient UI errors.
         return None
 
 def load_data_fallback():
