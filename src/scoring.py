@@ -132,13 +132,13 @@ def score_lead_logic(note):
     
     # Phân loại (Category) & Đề xuất hành động
     if score >= 50:
-        category = "Nóng"
+        category = "HOT"
         next_action = "📞 Gọi chốt deal (trong 5p)"
     elif score <= -50:
-        category = "Rác"
+        category = "JUNK"
         next_action = "🚫 Loại bỏ / Chặn số"
     else:
-        category = "Ấm"
+        category = "WARM"
         next_action = "📧 Đưa vào chuỗi chăm sóc Zalo"
         
     return score, category, tags_str, next_action

@@ -1,7 +1,17 @@
-# Ngăn chặn đẩy cấu hình bảo mật lên GitHub public
+# Streamlit secrets
 .streamlit/secrets.toml
 
-# Bỏ qua bộ nhớ đệm Python
+# Google credentials
+*.json
+credentials*.json
+service-account*.json
+
+# Python
 __pycache__/
 *.pyc
+.venv/
+venv/
 .ipynb_checkpoints/
+
+# Generated outputs
+outputs/*.xlsx
