@@ -85,12 +85,11 @@ def render_kpis(df):
 def render_data_table(df_scored):
     st.subheader("📝 2. Bảng Kiểm Duyệt Khách Hàng (Checkpoint Gate)")
     st.markdown("""
-        *Hệ thống đã tự động gán **Tags** và **Next Best Action**. Bạn có thể dùng bộ lọc dưới đây để tìm và phê duyệt khách hàng nhanh chóng.*
+        *Hệ thống đã tự động gán **Tags** và **Next Best Action**. Bạn có thể dùng bộ lọc ở thanh bên trái (Sidebar) để tìm và phê duyệt khách hàng nhanh chóng.*
     """)
     
-    left_col, right_col = st.columns([1, 3])
-    
-    with left_col:
+    with st.sidebar:
+        st.markdown("---")
         st.markdown("##### 🔎 Bộ Lọc Dữ Liệu")
         filter_cat = st.multiselect("Lọc theo Phân loại:", options=["HOT", "WARM", "JUNK"], default=["HOT", "WARM", "JUNK"])
         filter_status = st.multiselect("Lọc theo Trạng thái:", options=["Chờ duyệt", "Đã duyệt", "Loại bỏ"], default=["Chờ duyệt", "Đã duyệt", "Loại bỏ"])
@@ -110,48 +109,48 @@ def render_data_table(df_scored):
         st.markdown("---")
         mask_pii = st.toggle("🔒 Ẩn thông tin cá nhân (PII)", value=True)
 
-    with right_col:
-        filtered_df = df_scored[
-            (df_scored["Phân loại"].isin(filter_cat)) & 
-            (df_scored["Trạng thái duyệt"].isin(filter_status))
-        ]
-        
-        # Xử lý masking PII
-        display_df = filtered_df.copy()
-        if mask_pii:
-            if "sdt" in display_df.columns:
-                display_df["sdt"] = display_df["sdt"].astype(str).apply(lambda x: x[:-3] + "***" if len(x) > 3 else x)
-            if "email" in display_df.columns:
-                display_df["email"] = display_df["email"].astype(str).apply(lambda x: x.split("@")[0][:3] + "***@" + x.split("@")[-1] if "@" in x else x)
+    # Main Area Table
+    filtered_df = df_scored[
+        (df_scored["Phân loại"].isin(filter_cat)) & 
+        (df_scored["Trạng thái duyệt"].isin(filter_status))
+    ]
+    
+    # Xử lý masking PII
+    display_df = filtered_df.copy()
+    if mask_pii:
+        if "sdt" in display_df.columns:
+            display_df["sdt"] = display_df["sdt"].astype(str).apply(lambda x: x[:-3] + "***" if len(x) > 3 else x)
+        if "email" in display_df.columns:
+            display_df["email"] = display_df["email"].astype(str).apply(lambda x: x.split("@")[0][:3] + "***@" + x.split("@")[-1] if "@" in x else x)
 
-        disabled_cols = [col for col in display_df.columns if col != "Trạng thái duyệt"]
-        
-        edited_filtered_df = st.data_editor(
-            display_df,
-            column_config={
-                "id": st.column_config.NumberColumn("Mã KH", disabled=True, width="small"),
-                "ten_khach": st.column_config.TextColumn("Tên Khách Hàng", disabled=True, width="medium"),
-                "sdt": st.column_config.TextColumn("Số Điện Thoại", disabled=True, width="medium"),
-                "nhu_cau_mo_ta": st.column_config.TextColumn("Ghi chú Nhu cầu", disabled=True, width="large"),
-                "Điểm_AI": st.column_config.NumberColumn("Điểm AI", disabled=True, width="small", format="%d"),
-                "Phân loại": st.column_config.TextColumn("Phân loại", disabled=True, width="small"),
-                "Từ khóa": st.column_config.TextColumn("Từ khóa (Tags)", disabled=True, width="medium"),
-                "Gợi ý hành động": st.column_config.TextColumn("Gợi ý Hành Động", disabled=True, width="medium"),
-                "Trạng thái duyệt": st.column_config.SelectboxColumn(
-                    "Trạng thái duyệt",
-                    help="Phê duyệt hoặc Loại bỏ",
-                    width="medium",
-                    options=["Chờ duyệt", "Đã duyệt", "Loại bỏ"],
-                    required=True,
-                )
-            },
-            disabled=disabled_cols,
-            use_container_width=True,
-            hide_index=True
-        )
-        
-        # Chỉ đồng bộ trạng thái duyệt, không đồng bộ lại PII đã masked
-        filtered_df["Trạng thái duyệt"] = edited_filtered_df["Trạng thái duyệt"]
-        st.session_state.scored_df.update(filtered_df)
-        
+    disabled_cols = [col for col in display_df.columns if col != "Trạng thái duyệt"]
+    
+    edited_filtered_df = st.data_editor(
+        display_df,
+        column_config={
+            "id": st.column_config.NumberColumn("Mã KH", disabled=True, width="small"),
+            "ten_khach": st.column_config.TextColumn("Tên Khách Hàng", disabled=True, width="medium"),
+            "sdt": st.column_config.TextColumn("Số Điện Thoại", disabled=True, width="medium"),
+            "nhu_cau_mo_ta": st.column_config.TextColumn("Ghi chú Nhu cầu", disabled=True, width="large"),
+            "Điểm_AI": st.column_config.NumberColumn("Điểm AI", disabled=True, width="small", format="%d"),
+            "Phân loại": st.column_config.TextColumn("Phân loại", disabled=True, width="small"),
+            "Từ khóa": st.column_config.TextColumn("Từ khóa (Tags)", disabled=True, width="medium"),
+            "Gợi ý hành động": st.column_config.TextColumn("Gợi ý Hành Động", disabled=True, width="medium"),
+            "Trạng thái duyệt": st.column_config.SelectboxColumn(
+                "Trạng thái duyệt",
+                help="Phê duyệt hoặc Loại bỏ",
+                width="medium",
+                options=["Chờ duyệt", "Đã duyệt", "Loại bỏ"],
+                required=True,
+            )
+        },
+        disabled=disabled_cols,
+        use_container_width=True,
+        hide_index=True
+    )
+    
+    # Chỉ đồng bộ trạng thái duyệt, không đồng bộ lại PII đã masked
+    filtered_df["Trạng thái duyệt"] = edited_filtered_df["Trạng thái duyệt"]
+    st.session_state.scored_df.update(filtered_df)
+    
     st.divider()
