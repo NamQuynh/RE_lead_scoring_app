@@ -4,74 +4,70 @@ import re
 def score_lead_logic(note):
     """
     Hàm phân loại và chấm điểm khách hàng tiềm năng dựa theo Tiêu chí thực hành Buổi 7.
-    - Cộng 50 điểm cho khách hàng VIP / siêu tiềm năng.
-    - Trừ 50 điểm cho khách hàng rác / không tiềm năng.
-    - Giữ nguyên điểm (0 điểm) hoặc cộng ít (10 điểm) cho các trường hợp khác.
+    Bản nâng cấp (BA Audit): Trả về Tags ngắn gọn và Hành động tiếp theo (Next Action) thay vì dòng text dài.
     """
     note_lower = str(note).lower()
     score = 0
-    reasons = []
+    tags = []
     
     # 1. TIÊU CHÍ CỘNG 50 ĐIỂM (KHÁCH HÀNG VIP / SIÊU TIỀM NĂNG)
     vip_matched = False
     
-    # - Ngân sách lớn: Số tiền >= 20 tỷ hoặc các cụm từ chỉ định
+    # - Ngân sách lớn
     budget_large = False
     if any(kw in note_lower for kw in ["tài chính mạnh", "không thành vấn đề"]):
         budget_large = True
-        reasons.append("Ngân sách lớn (Tài chính mạnh)")
+        tags.append("💰 Tài chính mạnh")
     else:
-        # Tìm các số đi kèm chữ "tỷ"
         numbers = re.findall(r'(\d+)\s*tỷ', note_lower)
         for num_str in numbers:
             if int(num_str) >= 20:
                 budget_large = True
-                reasons.append(f"Ngân sách lớn (>= 20 tỷ: {num_str} tỷ)")
+                tags.append(f"💰 Ngân sách >20T")
                 break
                 
     # - Loại hình cao cấp
     high_end_type = False
-    vip_types = [
-        "biệt thự đơn lập", "biệt thự", "penthouse", 
-        "shophouse mặt đường lớn", "shophouse", 
-        "quỹ đất công nghiệp", "đất công nghiệp",
-        "sàn văn phòng diện tích lớn", "văn phòng diện tích lớn"
-    ]
-    for vt in vip_types:
-        if vt in note_lower:
+    vip_types = {
+        "biệt thự đơn lập": "Biệt thự ĐL", "biệt thự": "Biệt thự", "penthouse": "Penthouse", 
+        "shophouse mặt đường lớn": "Shophouse Vip", "shophouse": "Shophouse", 
+        "quỹ đất công nghiệp": "Đất CN", "đất công nghiệp": "Đất CN",
+        "sàn văn phòng diện tích lớn": "VP Lớn", "văn phòng diện tích lớn": "VP Lớn"
+    }
+    for kw, tag in vip_types.items():
+        if kw in note_lower:
             high_end_type = True
-            reasons.append(f"Loại hình cao cấp ({vt})")
+            tags.append(f"🏰 {tag}")
             break
             
     # - Vị trí đắc địa
     prime_location = False
-    vip_locations = ["quận 1", "ven sông", "vinhomes ocean park", "phú mỹ hưng"]
-    for vl in vip_locations:
-        if vl in note_lower:
+    vip_locations = {"quận 1": "Quận 1", "ven sông": "Ven sông", "vinhomes ocean park": "Vinhomes OCP", "phú mỹ hưng": "Phú Mỹ Hưng"}
+    for kw, tag in vip_locations.items():
+        if kw in note_lower:
             # Loại trừ trường hợp yêu cầu phi thực tế (ví dụ: nhà Q1 giá 1 tỷ)
-            if not ("1 tỷ" in note_lower or "2 tỷ" in note_lower or "vài trăm triệu" in note_lower or "2 triệu" in note_lower):
+            if not any(exc in note_lower for exc in ["1 tỷ", "2 tỷ", "vài trăm triệu", "2 triệu"]):
                 prime_location = True
-                reasons.append(f"Vị trí đắc địa ({vl})")
+                tags.append(f"📍 {tag}")
                 break
             
     # - Đối tượng khách hàng
     vip_persona = False
-    vip_personas = ["chủ doanh nghiệp", "nhà đầu tư chuyên nghiệp", "mua sỉ", "mua số lượng lớn"]
-    for vp in vip_personas:
-        if vp in note_lower:
+    vip_personas = {"chủ doanh nghiệp": "Chủ DN", "nhà đầu tư chuyên nghiệp": "NĐT VIP", "mua sỉ": "Mua Sỉ", "mua số lượng lớn": "Mua Sỉ"}
+    for kw, tag in vip_personas.items():
+        if kw in note_lower:
             vip_persona = True
-            reasons.append(f"Đối tượng VIP ({vp})")
+            tags.append(f"👤 {tag}")
             break
             
     # - Tính cấp thiết & Minh bạch
     urgency_transparency = False
-    vip_urgencies = ["pháp lý chuẩn 100%", "sổ hồng riêng", "gặp trực tiếp chủ đầu tư để đàm phán", "trực tiếp chủ đầu tư"]
-    for vu in vip_urgencies:
-        if vu in note_lower:
-            # Loại trừ trường hợp đất nền 2-3 tỷ (mục 3 - trường hợp khác)
-            if not ("2-3 tỷ" in note_lower or "2 tỷ" in note_lower or "3 tỷ" in note_lower):
+    vip_urgencies = {"pháp lý chuẩn 100%": "Pháp lý sạch", "sổ hồng riêng": "Sổ riêng", "gặp trực tiếp chủ đầu tư": "Gặp CĐT", "trực tiếp chủ đầu tư": "Trực tiếp CĐT"}
+    for kw, tag in vip_urgencies.items():
+        if kw in note_lower:
+            if not any(exc in note_lower for exc in ["2-3 tỷ", "2 tỷ", "3 tỷ"]):
                 urgency_transparency = True
-                reasons.append(f"Cấp thiết & Minh bạch ({vu})")
+                tags.append(f"⚖️ {tag}")
                 break
             
     if budget_large or high_end_type or prime_location or vip_persona or urgency_transparency:
@@ -86,64 +82,65 @@ def score_lead_logic(note):
     if "quận 1" in note_lower or "q1" in note_lower:
         if any(kw in note_lower for kw in ["1 tỷ", "1-2 tỷ", "2 tỷ", "vài trăm triệu"]):
             unrealistic_request = True
-            reasons.append("Yêu cầu phi thực tế (Nhà Q1 giá rẻ)")
+            tags.append("🤡 Nhu cầu ảo (Q1 rẻ)")
     if "trung tâm" in note_lower and any(kw in note_lower for kw in ["vài trăm triệu", "giá 2 triệu", "2 triệu"]):
         unrealistic_request = True
-        reasons.append("Yêu cầu phi thực tế (Trung tâm giá rẻ)")
+        tags.append("🤡 Nhu cầu ảo (TT rẻ)")
         
     # - Không có nhu cầu
     no_need = False
     if any(kw in note_lower for kw in ["nhầm số", "không có nhu cầu", "dữ liệu cũ", "nhầm ngành", "gọi nhầm"]):
         no_need = True
-        reasons.append("Không có nhu cầu thực tế")
+        tags.append("📵 Sai số/Không nhu cầu")
         
     # - Khách hàng không thiện chí
     uncooperative = False
     if any(kw in note_lower for kw in ["hỏi giá cho vui", "chưa có ý định mua", "thái độ không hợp tác", "không thiện chí"]):
         uncooperative = True
-        reasons.append("Khách hàng không thiện chí")
+        tags.append("😒 Không thiện chí")
         
     # - Spam/Quảng cáo
     spam_ad = False
     if any(kw in note_lower for kw in ["bảo hiểm", "vay vốn", "mời chào", "quảng cáo", "spam"]):
         spam_ad = True
-        reasons.append("Spam hoặc quảng cáo dịch vụ")
+        tags.append("🗑️ Spam/Quảng cáo")
         
     # - Thông tin liên lạc lỗi
     contact_issue = False
     if any(kw in note_lower for kw in ["thuê bao", "không bắt máy", "không phản hồi zalo"]):
         contact_issue = True
-        reasons.append("Lỗi thông tin liên lạc")
+        tags.append("🔇 Không liên lạc được")
         
     if unrealistic_request or no_need or uncooperative or spam_ad or contact_issue:
         score -= 50
         junk_matched = True
         
     # 3. CÁC TRƯỜNG HỢP KHÁC (GIỮ NGUYÊN ĐIỂM HOẶC CỘNG ÍT)
-    # Nếu không phải VIP và không phải JUNK
     if not vip_matched and not junk_matched:
-        # Mặc định cộng 10 điểm cho khách hàng có nhu cầu bình thường/tầm trung
         score += 10
         if any(kw in note_lower for kw in ["chung cư", "căn hộ", "nhà phố", "tầm trung", "3-10 tỷ"]):
-            reasons.append("Nhu cầu tầm trung (Chung cư/Nhà phố)")
+            tags.append("🏢 Nhu cầu Phổ thông")
         elif "vay ngân hàng" in note_lower or "hỗ trợ vay" in note_lower:
-            reasons.append("Cần hỗ trợ tài chính / vay ngân hàng")
+            tags.append("🏦 Cần vay NH")
         elif "đất nền" in note_lower or "sổ hồng riêng" in note_lower:
-            reasons.append("Đất nền vùng ven / Nhu cầu thực")
+            tags.append("🏕️ Đất nền")
         else:
-            reasons.append("Nhu cầu tiềm năng thông thường")
+            tags.append("✅ Nhu cầu trung bình")
             
-    reason_str = " | ".join(reasons) if reasons else "Thông thường"
+    tags_str = " | ".join(tags) if tags else "✅ Thông thường"
     
-    # Phân loại Category
+    # Phân loại Category & Đề xuất hành động (Next Best Action)
     if score >= 50:
         category = "HOT"
+        next_action = "📞 Gọi chốt deal (trong 5p)"
     elif score <= -50:
         category = "JUNK"
+        next_action = "🚫 Loại bỏ / Chặn số"
     else:
         category = "WARM"
+        next_action = "📧 Đưa vào chuỗi Zalo/Email"
         
-    return score, category, reason_str
+    return score, category, tags_str, next_action
 
 def process_leads_dataframe(df):
     """
@@ -172,7 +169,12 @@ def process_leads_dataframe(df):
     
     df["AI_Score"] = [res[0] for res in results]
     df["Category"] = [res[1] for res in results]
-    df["Reasoning"] = [res[2] for res in results]
+    df["Tags"] = [res[2] for res in results]
+    df["Next_Action"] = [res[3] for res in results]
+    
+    # Nếu đang có cột Reasoning cũ thì xóa đi
+    if "Reasoning" in df.columns:
+        df.drop(columns=["Reasoning"], inplace=True)
     
     # Thiết lập trạng thái mặc định cho Human-in-the-loop
     df["Status"] = "Chờ duyệt"

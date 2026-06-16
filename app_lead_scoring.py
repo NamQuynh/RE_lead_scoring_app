@@ -209,13 +209,13 @@ else:
                 st.sidebar.error("Không tìm thấy cả file Excel dự phòng.")
 
 st.sidebar.subheader("📋 Tri thức Chấm điểm (BANT)")
-st.sidebar.info("Ứng dụng tự động chấm điểm dựa trên tệp `tieu_chi_cham_diem.txt` của Buổi 7.")
+st.sidebar.info("Ứng dụng tự động chấm điểm dựa trên khung tiêu chuẩn CRM Bất Động Sản Quốc tế.")
 
 # 2. MAIN PAGE BANNER
 st.markdown("""
     <div class="header-banner">
         <h1 class="header-title">🏢 AI LEAD SCORING & CHECKPOINT SYSTEM</h1>
-        <p class="header-subtitle">Quy trình bàn giao (Handoff) dữ liệu sạch cho Sales dựa trên khung BANT & Tương tác Human-in-the-loop</p>
+        <p class="header-subtitle">Hệ thống phân luồng khách hàng tự động với "Glanceable UX" và bộ lọc đa chiều (Advanced Filters)</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -260,12 +260,26 @@ else:
     # 4. HUMAN-IN-THE-LOOP CHECKPOINT (Bảng kiểm duyệt)
     st.subheader("📝 2. Bảng Kiểm Duyệt Khách Hàng (Checkpoint Gate)")
     st.markdown("""
-        *AI đã quét nội dung ghi chú và tự động gắn thẻ điểm số/phân loại. Vui lòng rà soát lại cột **Trạng thái duyệt** trước khi xuất file bàn giao.*
-        - **Khóa dữ liệu gốc:** Các cột như Họ tên, SĐT, Nhu cầu được khóa để chống sửa đổi nhầm.
-        - **Cột được phép sửa:** Chỉ cột **Trạng thái duyệt** (Status) để nhân sự Kế toán/Sales phê duyệt.
+        *Hệ thống đã tự động gán **Tags** và **Next Best Action** (Gợi ý hành động tiếp theo). Kế toán/Sales có thể dùng bộ lọc (Filters) dưới đây để duyệt nhanh theo nhóm khách hàng.*
     """)
     
-    # Tính năng Duyệt Nhanh (Quick Approve Actions) để tối ưu thao tác cho người dùng
+    # --- BỘ LỌC ĐA CHIỀU (ADVANCED FILTERS) ---
+    st.markdown("##### 🔎 Bộ Lọc Dữ Liệu (Progressive Disclosure)")
+    filter_col1, filter_col2 = st.columns(2)
+    with filter_col1:
+        filter_cat = st.multiselect("Lọc theo Phân loại (Category):", options=["HOT", "WARM", "JUNK"], default=["HOT", "WARM", "JUNK"])
+    with filter_col2:
+        filter_status = st.multiselect("Lọc theo Trạng thái duyệt:", options=["Chờ duyệt", "Đã duyệt", "Loại bỏ"], default=["Chờ duyệt", "Đã duyệt", "Loại bỏ"])
+        
+    # Áp dụng bộ lọc lên dataframe
+    filtered_df = df_scored[
+        (df_scored["Category"].isin(filter_cat)) & 
+        (df_scored["Status"].isin(filter_status))
+    ]
+    
+    st.markdown("---")
+    
+    # --- TÍNH NĂNG DUYỆT NHANH (QUICK ACTIONS) ---
     col_quick1, col_quick2, col_quick3 = st.columns([1, 1, 2])
     with col_quick1:
         if st.button("⚡ Duyệt nhanh toàn bộ HOT & WARM"):
@@ -279,19 +293,20 @@ else:
             st.rerun()
             
     # Cấu hình danh sách cột khóa
-    disabled_cols = [col for col in df_scored.columns if col != "Status"]
+    disabled_cols = [col for col in filtered_df.columns if col != "Status"]
     
     # Bảng chỉnh sửa tương tác
-    edited_df = st.data_editor(
-        df_scored,
+    edited_filtered_df = st.data_editor(
+        filtered_df,
         column_config={
-            "id": st.column_config.NumberColumn("ID Lead", disabled=True, width="small"),
+            "id": st.column_config.NumberColumn("ID", disabled=True, width="small"),
             "ten_khach": st.column_config.TextColumn("Tên Khách Hàng", disabled=True, width="medium"),
             "sdt": st.column_config.TextColumn("Số Điện Thoại", disabled=True, width="medium"),
             "nhu_cau_mo_ta": st.column_config.TextColumn("Mô tả nhu cầu (Gốc)", disabled=True, width="large"),
-            "AI_Score": st.column_config.NumberColumn("Điểm số BANT", disabled=True, width="small", format="%d"),
+            "AI_Score": st.column_config.NumberColumn("Điểm", disabled=True, width="small", format="%d"),
             "Category": st.column_config.TextColumn("Xếp hạng", disabled=True, width="small"),
-            "Reasoning": st.column_config.TextColumn("Lý do của AI", disabled=True, width="large"),
+            "Tags": st.column_config.TextColumn("Từ khóa (Tags)", disabled=True, width="medium"),
+            "Next_Action": st.column_config.TextColumn("Gợi ý Hành động", disabled=True, width="medium"),
             "Status": st.column_config.SelectboxColumn(
                 "Trạng thái duyệt",
                 help="Phê duyệt hoặc Loại bỏ khách hàng",
@@ -305,8 +320,8 @@ else:
         hide_index=True
     )
     
-    # Đồng bộ trạng thái chỉnh sửa thủ công vào session_state để lưu trữ
-    st.session_state.scored_df = edited_df
+    # Đồng bộ trạng thái chỉnh sửa thủ công từ bảng lọc về session_state gốc
+    st.session_state.scored_df.update(edited_filtered_df)
     
     st.divider()
 
@@ -314,9 +329,9 @@ else:
     st.subheader("📥 3. Xuất Bản & Bàn Giao Dữ Liệu Sạch (System Handoff)")
     
     # Thống kê trạng thái duyệt của user
-    approved_count = len(edited_df[edited_df["Status"] == "Đã duyệt"])
-    rejected_count = len(edited_df[edited_df["Status"] == "Loại bỏ"])
-    pending_count = len(edited_df[edited_df["Status"] == "Chờ duyệt"])
+    approved_count = len(st.session_state.scored_df[st.session_state.scored_df["Status"] == "Đã duyệt"])
+    rejected_count = len(st.session_state.scored_df[st.session_state.scored_df["Status"] == "Loại bỏ"])
+    pending_count = len(st.session_state.scored_df[st.session_state.scored_df["Status"] == "Chờ duyệt"])
     
     c1, c2, c3 = st.columns(3)
     c1.info(f"⏳ Số khách đang Chờ duyệt: **{pending_count}**")
@@ -324,7 +339,7 @@ else:
     c3.error(f"❌ Số khách bị Loại bỏ: **{rejected_count}**")
     
     # Lọc ra tập dữ liệu sạch để xuất
-    df_clean = edited_df[edited_df["Status"] == "Đã duyệt"]
+    df_clean = st.session_state.scored_df[st.session_state.scored_df["Status"] == "Đã duyệt"]
     
     if approved_count > 0:
         # Xuất dữ liệu sang file Excel Excel Sạch bằng openpyxl / xlsxwriter
