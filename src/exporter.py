@@ -47,11 +47,18 @@ def render_export_section(df_scored):
                 'fg_color': '#1e293b', 'font_color': '#ffffff', 'border': 1
             })
             
-            for sheet_name in ['Sales_Handoff', 'Review_Log', 'Summary']:
-                worksheet = writer.sheets[sheet_name]
-                df_sheet = pd.read_excel(output) if sheet_name == 'Sales_Handoff' else pd.DataFrame() # Just to get column numbers, skip this for simplicity
-                # We will just write the headers formatting naively
+            for col_num, value in enumerate(df_sales.columns.values):
+                writer.sheets['Sales_Handoff'].write(0, col_num, value, header_format)
+                writer.sheets['Sales_Handoff'].set_column(col_num, col_num, 15)
                 
+            for col_num, value in enumerate(review_columns):
+                writer.sheets['Review_Log'].write(0, col_num, value, header_format)
+                writer.sheets['Review_Log'].set_column(col_num, col_num, 15)
+                
+            summary_df = pd.DataFrame(summary_data)
+            for col_num, value in enumerate(summary_df.columns.values):
+                writer.sheets['Summary'].write(0, col_num, value, header_format)
+                writer.sheets['Summary'].set_column(col_num, col_num, 20)
         excel_data = output.getvalue()
         
         st.download_button(
