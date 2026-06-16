@@ -1,0 +1,7 @@
+# Ngăn chặn đẩy cấu hình bảo mật lên GitHub public
+.streamlit/secrets.toml
+
+# Bỏ qua bộ nhớ đệm Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
