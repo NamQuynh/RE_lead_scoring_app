@@ -4,7 +4,8 @@ import re
 def score_lead_logic(note):
     """
     Hàm phân loại và chấm điểm khách hàng tiềm năng dựa theo Tiêu chí thực hành Buổi 7.
-    Bản nâng cấp (BA Audit): Trả về Tags ngắn gọn và Hành động tiếp theo (Next Action) thay vì dòng text dài.
+    Bản nâng cấp (BA Audit): Trả về Từ khóa (Tags) ngắn gọn và Hành động tiếp theo thay vì dòng text dài.
+    Thuần Việt 100% cho Non-tech User.
     """
     note_lower = str(note).lower()
     score = 0
@@ -129,22 +130,22 @@ def score_lead_logic(note):
             
     tags_str = " | ".join(tags) if tags else "✅ Thông thường"
     
-    # Phân loại Category & Đề xuất hành động (Next Best Action)
+    # Phân loại (Category) & Đề xuất hành động
     if score >= 50:
-        category = "HOT"
+        category = "Nóng"
         next_action = "📞 Gọi chốt deal (trong 5p)"
     elif score <= -50:
-        category = "JUNK"
+        category = "Rác"
         next_action = "🚫 Loại bỏ / Chặn số"
     else:
-        category = "WARM"
-        next_action = "📧 Đưa vào chuỗi Zalo/Email"
+        category = "Ấm"
+        next_action = "📧 Đưa vào chuỗi chăm sóc Zalo"
         
     return score, category, tags_str, next_action
 
 def process_leads_dataframe(df):
     """
-    Xử lý hàng loạt danh sách lead (Batch Processing) từ file Excel / DataFrame.
+    Xử lý hàng loạt danh sách khách hàng từ file Excel / DataFrame.
     """
     # Tìm cột chứa nội dung nhu cầu / ghi chú
     note_col = None
@@ -155,7 +156,6 @@ def process_leads_dataframe(df):
             break
             
     if not note_col:
-        # Quét cột nào có tên gần giống
         for col in df.columns:
             if "nhu cầu" in col.lower() or "ghi chú" in col.lower() or "note" in col.lower():
                 note_col = col
@@ -167,16 +167,17 @@ def process_leads_dataframe(df):
     # Áp dụng logic chấm điểm
     results = df[note_col].apply(score_lead_logic)
     
-    df["AI_Score"] = [res[0] for res in results]
-    df["Category"] = [res[1] for res in results]
-    df["Tags"] = [res[2] for res in results]
-    df["Next_Action"] = [res[3] for res in results]
+    df["Điểm_AI"] = [res[0] for res in results]
+    df["Phân loại"] = [res[1] for res in results]
+    df["Từ khóa"] = [res[2] for res in results]
+    df["Gợi ý hành động"] = [res[3] for res in results]
     
-    # Nếu đang có cột Reasoning cũ thì xóa đi
-    if "Reasoning" in df.columns:
-        df.drop(columns=["Reasoning"], inplace=True)
+    # Xóa các cột cũ tiếng Anh nếu có
+    for old_col in ["AI_Score", "Category", "Tags", "Next_Action", "Reasoning", "Status"]:
+        if old_col in df.columns:
+            df.drop(columns=[old_col], inplace=True)
     
-    # Thiết lập trạng thái mặc định cho Human-in-the-loop
-    df["Status"] = "Chờ duyệt"
+    # Thiết lập trạng thái mặc định cho khâu kiểm duyệt
+    df["Trạng thái duyệt"] = "Chờ duyệt"
     
     return df
