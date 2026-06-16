@@ -36,8 +36,13 @@ def fetch_and_score_data():
         return process_leads_dataframe(df_raw)
     return None
 
-if "scored_df" not in st.session_state or st.sidebar.button("🔄 Tải lại Dữ Liệu & AI"):
+refresh_clicked = st.sidebar.button("🔄 Tải lại Dữ Liệu & AI")
+
+if "scored_df" not in st.session_state or refresh_clicked:
     with st.spinner("🤖 Trợ lý AI đang tải dữ liệu và chấm điểm khách hàng..."):
+        if refresh_clicked:
+            fetch_and_score_data.clear()
+            
         df_result = fetch_and_score_data()
         if df_result is not None:
             st.session_state.scored_df = df_result
