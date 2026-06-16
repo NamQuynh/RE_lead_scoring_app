@@ -10,7 +10,9 @@ def load_data_from_private_gsheet():
     """
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        df = conn.read(worksheet="Leads", ttl=600)
+        # Sử dụng URL được cung cấp và đọc tab đầu tiên (worksheet=0) để tránh lỗi sai tên tab
+        sheet_url = "https://docs.google.com/spreadsheets/d/1Og3BaCu7iSDJMLmdZJ25RfJF1qTHYSaoHXJj6UT-H6E/edit"
+        df = conn.read(spreadsheet=sheet_url, worksheet=0, ttl=600)
         
         # Validate cấu trúc dữ liệu tối thiểu
         required_columns = ["lead_id", "customer_name", "phone", "email", "source", "description", "score", "segment"]
