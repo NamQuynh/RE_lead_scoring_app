@@ -69,4 +69,4 @@ def render_export_section(df_scored):
             use_container_width=True
         )
     else:
-        st.error("⚠️ Chưa có khách hàng nào được 'Đã duyệt'. Không thể tạo file báo cáo.")
+        st.info("💡 Vui lòng phê duyệt (chọn 'Đã duyệt') ít nhất 1 khách hàng ở bảng trên để mở khóa tính năng tải báo cáo Excel.")
