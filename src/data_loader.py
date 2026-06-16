@@ -14,8 +14,8 @@ def load_data_from_private_gsheet():
         sheet_url = "https://docs.google.com/spreadsheets/d/1Og3BaCu7iSDJMLmdZJ25RfJF1qTHYSaoHXJj6UT-H6E/edit"
         df = conn.read(spreadsheet=sheet_url, worksheet=0, ttl=600)
         
-        # Validate cấu trúc dữ liệu tối thiểu
-        required_columns = ["lead_id", "customer_name", "phone", "email", "source", "description", "score", "segment"]
+        # Validate cấu trúc dữ liệu tối thiểu dựa trên mẫu file tiếng Việt
+        required_columns = ["id", "ten_khach", "sdt", "nhu_cau_mo_ta"]
         missing_cols = [col for col in required_columns if col not in df.columns]
         
         if missing_cols:
